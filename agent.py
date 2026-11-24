@@ -77,17 +77,27 @@ def mark_processed(email_id: str, company: str, eligible: bool):
 
 # ─── Gmail ────────────────────────────────────────────────────────────────────
 def get_gmail_service():
-    creds = None
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+    import base64, tempfile
+
+    # Load from env vars (for cloud deployment) or local files (for local run)
+    gmail_token = os.getenv("GMAIL_TOKEN")
+    gmail_creds = os.getenv("GMAIL_CREDENTIALS")
+
+    if gmail_token and gmail_creds:
+        token_data = base64.b64decode(gmail_token).decode()
+        creds = Credentials.from_authorized_user_info(json.loads(token_data), SCOPES)
+        if creds.expired and creds.refresh_token:
             creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
+    elif os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+        creds = flow.run_local_server(port=0)
         with open("token.json", "w") as f:
             f.write(creds.to_json())
+
     return build("gmail", "v1", credentials=creds)
 
 
