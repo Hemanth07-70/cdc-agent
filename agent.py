@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import base64
 import sqlite3
@@ -6,6 +7,9 @@ import asyncio
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
+
+# Force unbuffered output for Render logs
+sys.stdout.reconfigure(line_buffering=True)
 from openai import OpenAI
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
