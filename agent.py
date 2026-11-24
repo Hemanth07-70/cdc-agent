@@ -3,6 +3,8 @@ import json
 import base64
 import sqlite3
 import asyncio
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
 from openai import OpenAI
 from google.oauth2.credentials import Credentials
@@ -296,8 +298,24 @@ def run_check():
 
 
 # ─── Scheduler ────────────────────────────────────────────────────────────────
+def start_health_server():
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"CDC Agent running")
+        def log_message(self, *args):
+            pass
+    port = int(os.getenv("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    print(f"Health server on port {port}")
+
+
 def main():
     init_db()
+    start_health_server()
     print("=" * 50)
     print("VIT CDC Email Agent")
     print(f"Profile: {MY_PROFILE['name']} | {MY_PROFILE['branch']} | CGPA {MY_PROFILE['cgpa']}")
